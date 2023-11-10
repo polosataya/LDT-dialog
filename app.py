@@ -1,11 +1,13 @@
 # streamlit run app.py
 import streamlit as st
 import pandas as pd
-import numpy as np
+#import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 import joblib
 from catboost import CatBoostClassifier, Pool
 import spacy
+import ru_core_news_md
+
 import re
 
 st.set_page_config(
@@ -20,7 +22,8 @@ st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 ############################################################################
 # функции
 ############################################################################
-lemmatizer = spacy.load('ru_core_news_md', disable = ['parser', 'ner'])
+#lemmatizer = spacy.load('ru_core_news_md', disable = ['parser', 'ner'])
+lemmatizer = ru_core_news_md.load(disable = ['parser', 'ner'])
 stopwords_nltk=[]
 
 def full_clean(s):
