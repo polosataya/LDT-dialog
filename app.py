@@ -1,12 +1,10 @@
 # streamlit run app.py
 import streamlit as st
 import pandas as pd
-#import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 import joblib
 from catboost import CatBoostClassifier, Pool
 import spacy
-#import ru_core_news_md
 
 import re
 
@@ -23,7 +21,6 @@ st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 # функции
 ############################################################################
 lemmatizer = spacy.load('ru_core_news_md', disable = ['parser', 'ner'])
-#lemmatizer = ru_core_news_md.load(disable = ['parser', 'ner'])
 stopwords_nltk=[]
 
 def full_clean(s):
@@ -124,12 +121,24 @@ model_1 = load_model1('model/model1.cbm')
 model_2 = load_model1('model/model2.cbm')
 
 
-df, data=load_file('data/Газпром_valid.xlsx')
+#df, data=load_file('data/Газпром_valid.xlsx')
 
 ############################################################################
 # вывод результатов
 ############################################################################
 
+# Заголовок страницы
+st.title("Результаты анализа")
+
+# Создание кнопки загрузки файла
+upload_button = st.file_uploader("Выберите файл для загрузки", type=["xlsx", "csv"])
+
+if upload_button is not None:
+    # Загрузка выбранного файла, если кнопка нажата
+    df, data = load_file(upload_button)
+else:
+    # Загрузка файла по умолчанию, если кнопка не нажата
+    df, data = load_file('data/Газпром_valid.xlsx')
 
 X_tfidf = tfidf_featuring(tfidf, data['clean'])
 
@@ -142,10 +151,31 @@ t['№ диалога']=t.index
 t['Тональность']=valid_predict1
 t['Тональность']=t['Тональность'].map({1:'positive', 0: "neutral", -1:'negative'})
 
-num = 9
+# Создаем ползунок для выбора индекса диалога
+selected_dialog_index = st.slider("Выберите номер диалога", 0, len(df['№ диалога'].unique()) - 1)
 
-st.write("Диалог")
-st.write(df[df['№ диалога']==num][['№ сообщения', 'Текст', 'Направление']])
+# Получаем номер диалога по индексу
+selected_dialog = df['№ диалога'].unique()[selected_dialog_index]
 
-st.write("Прогноз")
-st.write(t[t['№ диалога']==num][['Тональность', 'Стоп темы']]) 
+# Фильтруем данные для выбранного диалога
+dialog_data = df[df['№ диалога'] == selected_dialog]
+
+# Улучшаем стиль вывода информации о выбранном диалоге
+st.subheader("Диалог")
+st.table(df[df['№ диалога'] == selected_dialog][['№ сообщения', 'Текст', 'Направление']].set_index("№ сообщения"))
+
+# Используем выбранный диалог для фильтрации прогнозов
+selected_predictions = t[t['№ диалога'] == selected_dialog]
+
+# Улучшаем стиль вывода информации о прогнозе
+st.subheader("Прогноз")
+
+# Отдельно выводим тональность
+tonality = selected_predictions['Тональность'].iloc[0]
+st.write(f"**Тональность:** {tonality}")
+
+# Отдельно выводим стоп темы и их значения
+stop_themes = selected_predictions['Стоп темы'].iloc[0].split(',')
+stop_themes_str = ', '.join(stop_themes)
+
+st.write(f"**Стоп темы:** {stop_themes_str}")
